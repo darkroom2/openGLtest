@@ -1,289 +1,270 @@
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <vector>
+#include "libs.h"
 
-#include <gl/glew.h>
-#include <GLFW/glfw3.h>
-#include <glm.hpp>
-#include <vec2.hpp>
-#include <vec3.hpp>
-#include <vec4.hpp>
-#include <mat4x4.hpp>
-#include <gtc/matrix_transform.hpp>
-#include <gtc/type_ptr.hpp>
-#include <SOIL2.h>
+//ZOOOOOOOOOOOM IN BEFORE RECORDING!
 
-struct Vertex {
-	glm::vec3 position;
-	glm::vec3 color;
-	glm::vec2 texcoord;
+Vertex vertices[] =
+{
+	//Position								//Color							//Texcoords					//Normals
+	glm::vec3(-0.5f, 0.5f, 0.f),			glm::vec3(1.f, 0.f, 0.f),		glm::vec2(0.f, 1.f),		glm::vec3(0.f, 0.f, -1.f),
+	glm::vec3(-0.5f, -0.5f, 0.f),			glm::vec3(0.f, 1.f, 0.f),		glm::vec2(0.f, 0.f),		glm::vec3(0.f, 0.f, -1.f),
+	glm::vec3(0.5f, -0.5f, 0.f),			glm::vec3(0.f, 0.f, 1.f),		glm::vec2(1.f, 0.f),		glm::vec3(0.f, 0.f, -1.f),
+	glm::vec3(0.5f, 0.5f, 0.f),				glm::vec3(1.f, 1.f, 0.f),		glm::vec2(1.f, 1.f),		glm::vec3(0.f, 0.f, -1.f)
 };
+unsigned nrOfVertices = sizeof(vertices) / sizeof(Vertex);
 
-Vertex vertices[] = {
-	//pos							//color							//textureCoord
-	glm::vec3(-0.5f, 0.5f,	0.0f),	glm::vec3(1.0f, 0.0f,	0.f),	glm::vec2(0.0f, 1.0f),
-	glm::vec3(-0.5f, -0.5f,	0.0f),	glm::vec3(.0f, 1.0f,	0.f),	glm::vec2(0.0f, 0.0f),
-	glm::vec3(0.5f, -0.5f,	0.0f),	glm::vec3(.0f, 0.0f,	1.f),	glm::vec2(1.0f, 0.0f),
-	glm::vec3(0.5f, 0.5f,	0.0f),	glm::vec3(1.0f, 1.0f,	0.f),	glm::vec2(1.0f, 1.0f)
+GLuint indices[] =
+{
+	0, 1, 2,	//Triangle 1
+	0, 2, 3		//Triangle 2
 };
+unsigned nrOfIndices = sizeof(indices) / sizeof(GLuint);
 
-unsigned verticesCount = sizeof(vertices) / sizeof(Vertex);
-
-GLuint indices[] = {
-	0, 1, 2,	// Triangle 1
-	0, 2, 3		// Triangle 2
-};
-
-unsigned indicesCount = sizeof(indices) / sizeof(GLuint);
-
-void updateInput(GLFWwindow *wnd) {
-	if (glfwGetKey(wnd, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-		glfwSetWindowShouldClose(wnd, GLFW_TRUE);
+//Talk about sending sizeof pointers and errors
+void updateInput(GLFWwindow* window)
+{
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+	{
+		glfwSetWindowShouldClose(window, GLFW_TRUE);
 	}
 }
 
-void fbResize(GLFWwindow *wnd, int fbW, int fbH) {
+void framebuffer_resize_callback(GLFWwindow* window, int fbW, int fbH)
+{
 	glViewport(0, 0, fbW, fbH);
 }
 
-bool loadShaders(GLuint &program) {
-	bool loadSuccess = true;
-	char infoLog[512];
-	GLint success;
-
-	std::string temp = "";
-	std::string src = "";
-
-	std::ifstream in_file;
-
-	//Vertex
-	in_file.open("shaders/vertex_core.glsl");
-	if (in_file.is_open()) {
-		while (std::getline(in_file, temp)) {
-			src += temp + "\n";
-		}
+void updateInput(GLFWwindow* window, glm::vec3& position, glm::vec3& rotation, glm::vec3& scale)
+{
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+	{
+		position.z -= 0.01f;
 	}
-	else {
-		std::cout << "ERROR::LOADSHADERS::COULDNOT OPEN VERTEXFILE" << std::endl;
-		loadSuccess = false;
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+	{
+		position.z += 0.01f;
 	}
-	in_file.close();
-
-	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	const GLchar *vertSrc = src.c_str();
-
-	glShaderSource(vertexShader, 1, &vertSrc, nullptr);
-	glCompileShader(vertexShader);
-
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-
-	if (!success) {
-		glGetShaderInfoLog(vertexShader, 512, nullptr, infoLog);
-		std::cout << "ERROR::LOADSHADERS::COULDNOT COMPILE VERTEXFILE" << std::endl;
-		std::cout << infoLog << std::endl;
-		loadSuccess = false;
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+	{
+		position.x -= 0.01f;
 	}
-
-	temp = "";
-	src = "";
-
-	in_file.open("shaders/fragment_core.glsl");
-	if (in_file.is_open()) {
-		while (std::getline(in_file, temp)) {
-			src += temp + "\n";
-		}
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+	{
+		position.x += 0.01f;
 	}
-	else {
-		std::cout << "ERROR::LOADSHADERS::COULDNOT OPEN Framgent File" << std::endl;
-		loadSuccess = false;
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+	{
+		rotation.y -= 1.f;
 	}
-
-	in_file.close();
-
-	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	const GLchar *fragSrc = src.c_str();
-
-	glShaderSource(fragmentShader, 1, &fragSrc, nullptr);
-	glCompileShader(fragmentShader);
-
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-
-	if (!success) {
-		glGetShaderInfoLog(fragmentShader, 512, nullptr, infoLog);
-		std::cout << "ERROR::LOADSHADERS::COULDNOT COMPILE FRAGMENTFILE" << std::endl;
-		std::cout << infoLog << std::endl;
-		loadSuccess = false;
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+	{
+		rotation.y += 1.f;
 	}
-
-	program = glCreateProgram();
-	glAttachShader(program, vertexShader);
-	glAttachShader(program, fragmentShader);
-	glLinkProgram(program);
-
-	glGetProgramiv(program, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(program, 512, nullptr, infoLog);
-		std::cout << "ERROR::LOADSHADERS::COULDNOT LINK PROGRAM" << std::endl;
-		std::cout << infoLog << std::endl;
-		loadSuccess = false;
+	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+	{
+		scale += 0.1f;
 	}
-
-	glUseProgram(0);
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
-	return loadSuccess;
+	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
+	{
+		scale -= 0.1f;
+	}
 }
 
-int main() {
+int main()
+{
+	//INIT GLFW
 	glfwInit();
 
-	const int W = 640;
-	const int H = 480;
-
-	int frameBuffW = 0;
-	int frameBuffH = 0;
+	//CREATE WINDOW
+	const int WINDOW_WIDTH = 640;
+	const int WINDOW_HEIGHT = 480;
+	int framebufferWidth = 0;
+	int framebufferHeight = 0;
 
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
 	glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
-	GLFWwindow *window = glfwCreateWindow(W, H, "hello :D", nullptr, nullptr);
+	//glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); MAC OS
 
-	glfwSetFramebufferSizeCallback(window, fbResize);
-	//glfwGetFramebufferSize(window, &frameBuffW, &frameBuffH);
-	//glViewport(0, 0, frameBuffW, frameBuffH);
+	GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "YOUTUBE_TUTORIAL", NULL, NULL);
 
-	glfwMakeContextCurrent(window);
+	glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
+	glfwSetFramebufferSizeCallback(window, framebuffer_resize_callback);
+	//IMPORTANT WHITH PERSPECTIVE MATRIX!!!
 
+	//glViewport(0, 0, framebufferWidth, framebufferHeight);
+
+	glfwMakeContextCurrent(window); //IMPORTANT!!
+
+	//INIT GLEW (NEEDS WINDOW AND OPENGL CONTEXT)
 	glewExperimental = GL_TRUE;
 
-	if (glewInit() != GLEW_OK) {
-		std::cout << "ERROR::MAIN.CPP::GLEW_INIT_FAIL" << std::endl;
+	//Error
+	if (glewInit() != GLEW_OK)
+	{
+		std::cout << "ERROR::MAIN.CPP::GLEW_INIT_FAILED" << "\n";
 		glfwTerminate();
 	}
 
-	//oGL options
+	//OPENGL OPTIONS
 	glEnable(GL_DEPTH_TEST);
+
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
 
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	GLuint core_program;
-	if (!loadShaders(core_program))
-		glfwTerminate();
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-	GLuint VAO = 0;
+	//SHADER INIT
+	Shader core_program("vertex_core.glsl", "fragment_core.glsl");
+
+	//MODEL
+
+	//VAO, VBO, EBO
+	//GEN VAO AND BIND
+	GLuint VAO;
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
 
+	//GEN VBO AND BIND AND SEND DATA
 	GLuint VBO;
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
+	//GEN EBO AND BIND AND SEND DATA
 	GLuint EBO;
 	glGenBuffers(1, &EBO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-	// position
+	//SET VERTEXATTRIBPOINTERS AND ENABLE (INPUT ASSEMBLY)
+	//Position
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, position));
 	glEnableVertexAttribArray(0);
-	//color
+	//Color
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, color));
 	glEnableVertexAttribArray(1);
-	//texcoord
+	//Texcoord
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, texcoord));
 	glEnableVertexAttribArray(2);
+	//Normal
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, normal));
+	glEnableVertexAttribArray(3);
 
+	//BIND VAO 0
 	glBindVertexArray(0);
 
-	// TEXTURE 0
-	int img_w = 0;
-	int img_h = 0;
-	unsigned char *img = SOIL_load_image("imgs/pusheen.png", &img_w, &img_h, NULL, SOIL_LOAD_RGBA);
+	//TEXTURE INIT
 
-	GLuint texture0;
-	glGenTextures(1, &texture0);
-	glBindTexture(GL_TEXTURE_2D, texture0);
+	//TEXTURE 0
+	Texture texture0("imgs/pusheen.png", GL_TEXTURE_2D, 0);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	//TEXTURE 1
+	Texture texture1("imgs/container.png", GL_TEXTURE_2D, 1);
 
-	if (img) {
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img_w, img_h, 0, GL_RGBA, GL_UNSIGNED_BYTE, img);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else {
-		std::cout << "ERROR::TEXTURE LOAD FAIL" << std::endl;
-	}
+	//INIT MATRICES
+	glm::vec3 position(0.f);
+	glm::vec3 rotation(0.f);
+	glm::vec3 scale(1.f);
 
-	glActiveTexture(0);
-	glBindTexture(GL_TEXTURE_2D, 0);
+	glm::mat4 ModelMatrix(1.f);
+	ModelMatrix = glm::translate(ModelMatrix, position);
+	ModelMatrix = glm::rotate(ModelMatrix, glm::radians(rotation.x), glm::vec3(1.f, 0.f, 0.f));
+	ModelMatrix = glm::rotate(ModelMatrix, glm::radians(rotation.y), glm::vec3(0.f, 1.f, 0.f));
+	ModelMatrix = glm::rotate(ModelMatrix, glm::radians(rotation.z), glm::vec3(0.f, 0.f, 1.f));
+	ModelMatrix = glm::scale(ModelMatrix, scale);
 
-	SOIL_free_image_data(img);
+	glm::vec3 camPostion(0.f, 0.f, 1.f);
+	glm::vec3 worldUp(0.f, 1.f, 0.f);
+	glm::vec3 camFront(0.f, 0.f, -1.f);
 
-	// TEXTURE 1
-	int img_w1 = 0;
-	int img_h1 = 0;
-	unsigned char *img1 = SOIL_load_image("imgs/container.png", &img_w1, &img_h1, NULL, SOIL_LOAD_RGBA);
+	glm::mat4 ViewMatrix(1.f);
+	ViewMatrix = glm::lookAt(camPostion, camPostion + camFront, worldUp);
 
-	GLuint texture1;
-	glGenTextures(1, &texture1);
-	glBindTexture(GL_TEXTURE_2D, texture1);
+	float fov = 90.f;
+	float nearPlane = 0.1f;
+	float farPlane = 1000.f;
+	glm::mat4 ProjectionMatrix(1.f);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	ProjectionMatrix = glm::perspective(
+		glm::radians(fov),
+		static_cast<float>(framebufferWidth) / framebufferHeight,
+		nearPlane,
+		farPlane
+	);
 
-	if (img1) {
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img_w1, img_h1, 0, GL_RGBA, GL_UNSIGNED_BYTE, img1);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else {
-		std::cout << "ERROR::TEXTURE LOAD FAIL" << std::endl;
-	}
+	//LIGHTS
+	glm::vec3 lightPos0(0.f, 0.f, 1.f);
 
-	glActiveTexture(0);
-	glBindTexture(GL_TEXTURE_2D, 0);
+	//INIT UNIFORMS
 
-	SOIL_free_image_data(img1);
+	core_program.setMat4fv(ModelMatrix, "ModelMatrix");
+	core_program.setMat4fv(ViewMatrix, "ViewMatrix");
+	core_program.setMat4fv(ProjectionMatrix, "ProjectionMatrix");
 
-	while (!glfwWindowShouldClose(window)) {
-		// UPDATE INPUT ---
+	core_program.setVec3f(lightPos0, "lightPos0");
+	core_program.setVec3f(camPostion, "cameraPos");
+
+	//MAIN LOOP
+	while (!glfwWindowShouldClose(window))
+	{
+		//UPDATE INPUT ---
 		glfwPollEvents();
-		//glfwSetWindowShouldClose(window, true);
-		// UPDATE ---
+		updateInput(window, position, rotation, scale);
+
+		//UPDATE --- 
 		updateInput(window);
-		// DRAW ---
-		// Clear
+
+		//DRAW ---
+		//Clear
 		glClearColor(0.f, 0.f, 0.f, 1.f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-		glUseProgram(core_program);
+		//Update uniforms
+		core_program.set1i(texture0.getTextureUnit(), "texture0");
+		core_program.set1i(texture1.getTextureUnit(), "texture1");
 
-		glUniform1i(glGetUniformLocation(core_program, "texture0"), 0);
-		glUniform1i(glGetUniformLocation(core_program, "texture1"), 1);
+		//Move, rotate and scale
+		ModelMatrix = glm::mat4(1.f);
+		ModelMatrix = glm::translate(ModelMatrix, position);
+		ModelMatrix = glm::rotate(ModelMatrix, glm::radians(rotation.x), glm::vec3(1.f, 0.f, 0.f));
+		ModelMatrix = glm::rotate(ModelMatrix, glm::radians(rotation.y), glm::vec3(0.f, 1.f, 0.f));
+		ModelMatrix = glm::rotate(ModelMatrix, glm::radians(rotation.z), glm::vec3(0.f, 0.f, 1.f));
+		ModelMatrix = glm::scale(ModelMatrix, scale);
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture0);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, texture1);
+		core_program.setMat4fv(ModelMatrix, "ModelMatrix");
 
+		glfwGetFramebufferSize(window, &framebufferWidth, &framebufferHeight);
+
+		ProjectionMatrix = glm::perspective(
+			glm::radians(fov),
+			static_cast<float>(framebufferWidth) / framebufferHeight,
+			nearPlane,
+			farPlane
+		);
+
+		core_program.setMat4fv(ProjectionMatrix, "ProjectionMatrix");
+
+		//Use a program
+		core_program.use();
+
+		//Activate texture
+		texture0.bind();
+		texture1.bind();
+
+		//Bind vertex array object
 		glBindVertexArray(VAO);
 
-		glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
+		//Draw
+		//glDrawArrays(GL_TRIANGLES, 0, nrOfVertices);
+		glDrawElements(GL_TRIANGLES, nrOfIndices, GL_UNSIGNED_INT, 0);
 
+		//End Draw
 		glfwSwapBuffers(window);
 		glFlush();
 
@@ -292,10 +273,12 @@ int main() {
 		glActiveTexture(0);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
+
+	//END OF PROGRAM
 	glfwDestroyWindow(window);
 	glfwTerminate();
 
-	glDeleteProgram(core_program);
+	//Delete VAO and Buffers
 
 	return 0;
 }
